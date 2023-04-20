@@ -11,11 +11,19 @@ use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
-    //
+    /**
+     * タスク一覧
+     * @param Folder $folder
+     * @return \Illuminate\View\View
+     */
     public function index(Folder $folder)
     {
-        $folders = Auth::user()->folders()->get();
+        $folder_db = new Folder();
+        $id = Auth::id();
+        // ユーザーのフォルダを取得する
+        $folders = $folder_db->where('user_id', $id)->get();
 
+        // 選ばれたフォルダに紐づくタスクを取得する
         $tasks = $folder->tasks()->get();
 
         return view('tasks/index', [
@@ -25,6 +33,11 @@ class TaskController extends Controller
         ]);
     }
 
+    /**
+     * タスク作成フォーム
+     * @param Folder $folder
+     * @return \Illuminate\View\View
+     */
     public function showCreateForm(Folder $folder)
     {
         return view('tasks/create', [
@@ -32,6 +45,12 @@ class TaskController extends Controller
         ]);
     }
 
+    /**
+     * タスク作成
+     * @param Folder $folder
+     * @param CreateTask $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function create(Folder $folder, CreateTask $request)
     {
         $task = new Task();
@@ -41,10 +60,16 @@ class TaskController extends Controller
         $folder->tasks()->save($task);
 
         return redirect()->route('tasks.index', [
-            'id' => $folder->id,
+            'folder' => $folder->id,
         ]);
     }
 
+    /**
+     * タスク編集フォーム
+     * @param Folder $folder
+     * @param Task $task
+     * @return \Illuminate\View\View
+     */
     public function showEditForm(Folder $folder, Task $task)
     {
         $this->checkRelation($folder, $task);
@@ -54,6 +79,13 @@ class TaskController extends Controller
         ]);
     }
 
+    /**
+     * タスク編集
+     * @param Folder $folder
+     * @param Task $task
+     * @param EditTask $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function edit(Folder $folder, Task $task, EditTask $request)
     {
         $this->checkRelation($folder, $task);
@@ -64,10 +96,15 @@ class TaskController extends Controller
         $task->save();
 
         return redirect()->route('tasks.index', [
-            'id' => $task->folder_id,
+            'folder' => $task->folder_id,
         ]);
     }
 
+    /**
+     * フォルダとタスクの関連性があるか調べる
+     * @param Folder $folder
+     * @param Task $task
+     */
     private function checkRelation(Folder $folder, Task $task)
     {
         if ($folder->id !== $task->folder_id) {
